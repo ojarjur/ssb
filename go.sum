@@ -194,6 +194,8 @@ github.com/keks/persist v0.0.0-20191006175951-43c124092b8b h1:11DvlpW6oHk++gfPQm
 github.com/keks/persist v0.0.0-20191006175951-43c124092b8b/go.mod h1:ZB2JImK02q72rQo5xAXYfUVDKBBjmj6nUy4zjIa2HV8=
 github.com/kisielk/errcheck v1.1.0/go.mod h1:EZBBE59ingxPouuu3KfxchcWSUPOHkagtvWXihfKN4Q=
 github.com/kisielk/gotool v1.0.0/go.mod h1:XhKaO+MFFWcvkIS/tQcRk01m1F5IRFswLeQ+oQHNcck=
+github.com/keks/testops v0.1.0 h1:zXndbOmnupuJ0xXaxOO3NhsLE96n9sxPAwZlv2X8xmE=
+github.com/keks/testops v0.1.0/go.mod h1:Y6dVKPZzqnKExUl1FfRJRBd7yHbnTDCFfuU5Yt0fUEU=
 github.com/konsorten/go-windows-terminal-sequences v1.0.1/go.mod h1:T0+1ngSBFLxvqU3pZ+m/2kptfBszLMUkC4ZK/EgS/cQ=
 github.com/kr/logfmt v0.0.0-20140226030751-b84e30acd515/go.mod h1:+0opPa2QZZtGFBFZlji/RkVcI2GknAs/DXo4wKdlNEc=
 github.com/kr/pretty v0.1.0 h1:L/CwN0zerZDmRFUapSPitk6f+Q3+0za1rQkzVuMiMFI=
