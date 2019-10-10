@@ -166,6 +166,7 @@ func runSbot() error {
 		mksbot.WithListenAddr(listenAddr),
 		mksbot.EnableAdvertismentBroadcasts(flagEnAdv),
 		mksbot.EnableAdvertismentDialing(flagEnDiscov),
+		mksbot.LateOption(mksbot.WithKeyManager(log)),
 	}
 
 	if !flagDisableUNIXSock {
