@@ -4,6 +4,7 @@ go 1.13
 
 require (
 	github.com/RoaringBitmap/roaring v0.4.21-0.20190925020156-96f2302555b6
+	github.com/VividCortex/gohistogram v1.0.0
 	github.com/cryptix/go v1.5.0
 	github.com/davecgh/go-spew v1.1.1
 	github.com/dgraph-io/badger v2.0.0-rc2+incompatible
@@ -26,7 +27,7 @@ require (
 	go.cryptoscope.co/librarian v0.2.1-0.20200519132401-80c3b8105d40
 	go.cryptoscope.co/luigi v0.3.6-0.20200131144242-3256b54e72c8
 	go.cryptoscope.co/margaret v0.1.7-0.20200519144842-7c553c9d3bce
-	go.cryptoscope.co/muxrpc v1.5.4-0.20200422174348-fc975b161059
+	go.cryptoscope.co/muxrpc v1.5.4-0.20200415120423-6cd43427788b
 	go.cryptoscope.co/netwrap v0.1.1
 	go.cryptoscope.co/secretstream v1.2.2
 	go.mindeco.de/ssb-gabbygrove v0.1.6

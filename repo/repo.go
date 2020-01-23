@@ -202,7 +202,6 @@ func OpenBadgerIndex(r Interface, name string, f LibrarianIndexCreater) (*badger
 	}
 
 	idx, sinkidx := f(db)
-
 	return db, idx, sinkidx, nil
 }
 
