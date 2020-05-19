@@ -237,32 +237,47 @@ func testFSCKrepro(t *testing.T) {
 	tRepoPath := filepath.Join("testrun", t.Name())
 	t.Log(tRepoPath)
 	os.MkdirAll("testrun/TestFSCK", 0700)
-	// tRepo := repo.New(tRepoPath)
 
-	out, err := exec.Command("cp", "-v", "-r", "testdata/example-repo-with-a-bug", tRepoPath).CombinedOutput()
+	out, err := exec.Command("cp", "-v", "-r", "testdata/my-bad-log", tRepoPath).CombinedOutput()
 	r.NoError(err, "got: %s", string(out))
 
-	theBot, _ := makeTestBot(t)
+	theBot, reopen := makeTestBot(t)
 
 	seqV, err := theBot.RootLog.Seq().Value()
 	r.NoError(err)
 	latestSeq := seqV.(margaret.Seq)
-	r.EqualValues(latestSeq.Seq(), 6699)
+	r.EqualValues(1544310, latestSeq.Seq())
 
-	err = theBot.FSCK(FSCKWithMode(FSCKModeSequences))
+	err = theBot.FSCK(FSCKWithMode(FSCKModeLength))
 	r.Error(err)
-	constErrs, ok := err.(ErrConsistencyProblems)
-	r.True(ok, "wrong error type. got %T", err)
 
-	// repair it
-	err = theBot.HealRepo(constErrs)
+	// stop and re-index
+	theBot.Shutdown()
+	r.NoError(theBot.Close())
+
+	err = DropIndicies(repo.New(tRepoPath))
 	r.NoError(err)
 
-	// error is gone
+	err = RebuildIndicies(tRepoPath)
+	r.NoError(err)
+
+	//reopen
+	theBot, err = New(reopen...)
+	r.NoError(err)
+
+	// check seq
+	seqV, err = theBot.RootLog.Seq().Value()
+	r.NoError(err)
+	latestSeq = seqV.(margaret.Seq)
+	r.EqualValues(1544310, latestSeq.Seq())
+
+	err = theBot.FSCK(FSCKWithMode(FSCKModeLength))
+	r.NoError(err)
 	err = theBot.FSCK(FSCKWithMode(FSCKModeSequences))
 	r.NoError(err)
 
 	// cleanup
 	theBot.Shutdown()
 	r.NoError(theBot.Close())
+
 }

@@ -279,25 +279,37 @@ func main() {
 	err = sbot.FSCK(mksbot.FSCKWithFeedIndex(uf), mksbot.FSCKWithMode(fsckMode))
 	if flagRepair {
 		if err != nil {
-			if report, ok := err.(mksbot.ErrConsistencyProblems); ok {
+			switch report := err.(type) {
+			case ssb.ErrWrongSequence:
+				sbot.Shutdown()
+				err := sbot.Close()
+				checkFatal(err)
+
+				err = mksbot.DropIndicies(repo.New(repoDir))
+				checkFatal(err)
+				err = mksbot.RebuildIndicies(repoDir)
+				checkFatal(err)
+
+			case mksbot.ErrConsistencyProblems:
 				err = sbot.HealRepo(report)
 				if err != nil {
 					level.Error(log).Log("fsck", "heal failed", "err", err)
 				} else {
 					level.Info(log).Log("fsck", "healed", "msgs", report.Sequences.GetCardinality(), "feeds", len(report.Errors))
 				}
-			} else {
+				sbot.Shutdown()
+				err := sbot.Close()
+				checkAndLog(err)
+			default:
 				level.Error(log).Log("fsck", "wrong report type", "T", fmt.Sprintf("%T", err))
 
 			}
 
-			sbot.Shutdown()
-			err := sbot.Close()
-			checkAndLog(err)
 			return
 		}
+		level.Info(log).Log("fsck", "passed")
 	} else {
-		checkFatal(err)
+		checkFatal(errors.Wrap(err, "repo fsck failed"))
 	}
 	if exitAfterFSCK {
 		level.Info(log).Log("fsck", "completed", "mode", fsckMode)
@@ -327,6 +339,7 @@ func main() {
 			checkFatal(err)
 		}
 		level.Warn(log).Log("mode", "fsck done")
+		sbot.Shutdown()
 		err = sbot.Close()
 		checkAndLog(err)
 		return
