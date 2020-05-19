@@ -46,7 +46,9 @@ func (h *handler) fetchAll(
 	work := make(chan *ssb.FeedRef)
 
 	n := 1 + (len(lst) / 10)
-	maxWorker := runtime.NumCPU()
+	// this doesnt pipeline super well
+	// we can do more then one feed per core
+	maxWorker := runtime.NumCPU() * 4
 	if n > maxWorker { // n = max(n,maxWorker)
 		n = maxWorker
 	}
