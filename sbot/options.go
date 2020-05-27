@@ -5,6 +5,7 @@ package sbot
 import (
 	"context"
 	"encoding/base64"
+	"fmt"
 	"net"
 	"os"
 	"os/user"
@@ -72,6 +73,8 @@ type Sbot struct {
 
 	repoPath string
 	KeyPair  *ssb.KeyPair
+
+	authorizer ssb.Authorizer
 
 	RootLog multimsg.AlterableLog
 
@@ -357,6 +360,20 @@ func WithPromisc(yes bool) Option {
 	}
 }
 
+// WithPublicAuthorizer configures who is considered "public" when accepting connections.
+// By default, this is covered by the list of followed and blocked peers using the graph implementation.
+func WithPublicAuthorizer(auth ssb.Authorizer) Option {
+	return func(s *Sbot) error {
+		if s.authorizer != nil {
+			return fmt.Errorf("sbot: authorizer already configured")
+		}
+		s.authorizer = auth
+		return nil
+	}
+}
+
+// LateOption is a bit of a hack, it loads options after the _basic_ inititialisation is done (like repo location and keypair)
+// this is mainly usefull for plugins that want to use a configured bot.
 func LateOption(o Option) Option {
 	return func(s *Sbot) error {
 		s.lateInit = append(s.lateInit, o)

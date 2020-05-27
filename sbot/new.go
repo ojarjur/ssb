@@ -72,6 +72,7 @@ func (s *Sbot) Close() error {
 	return nil
 }
 
+// is called by New() in options, sorry
 func initSbot(s *Sbot) (*Sbot, error) {
 	log := s.info
 	var err error
@@ -204,8 +205,6 @@ func initSbot(s *Sbot) (*Sbot, error) {
 		s.closedMu.Lock()
 		defer s.closedMu.Unlock()
 
-		auth := s.replicator.makeLister()
-
 		remote, err := ssb.GetFeedRefFromAddr(conn.RemoteAddr())
 		if err != nil {
 			return nil, errors.Wrap(err, "sbot: expected an address containing an shs-bs addr")
@@ -231,6 +230,12 @@ func initSbot(s *Sbot) (*Sbot, error) {
 		if s.promisc {
 			return s.public.MakeHandler(conn)
 		}
+
+		auth := s.authorizer
+		if auth == nil {
+			auth = s.replicator.makeLister()
+		}
+
 		if s.latency != nil {
 			start := time.Now()
 			defer func() {
