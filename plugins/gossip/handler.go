@@ -89,11 +89,13 @@ func (g *handler) HandleConnect(ctx context.Context, e muxrpc.Endpoint) {
 		}
 	}
 
+	tick := time.NewTicker(5 * time.Minute)
 	for {
 		select {
 		case <-ctx.Done():
+			tick.Stop()
 			return
-		default:
+		case <-tick.C:
 		}
 		feeds := g.WantList.ReplicationList()
 		if feeds != nil {
@@ -104,7 +106,6 @@ func (g *handler) HandleConnect(ctx context.Context, e muxrpc.Endpoint) {
 			}
 		}
 		level.Debug(info).Log("msg", "hops fetch done", "count", feeds.Count(), "took", time.Since(start))
-		time.Sleep(5 * time.Minute)
 	}
 }
 
