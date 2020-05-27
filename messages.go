@@ -39,6 +39,44 @@ type Message interface {
 	ValueContentJSON() json.RawMessage
 }
 
+// Tangles!
+
+type ByBranches struct {
+	Items []TangledPost
+
+	before map[string]string
+}
+
+func (byBr *ByBranches) FillLookup() {
+	bf := make(map[string]string, len(byBr.Items))
+
+	for i, m := range byBr.Items {
+		//bf[ m.Key().Ref()]
+	}
+
+	byBr.before = bf
+}
+
+func (bct ByBranches) Len() int {
+	return len(bct.Items)
+}
+
+func (bct ByBranches) Less(i int, j int) bool {
+	fmt.Println("branches", i, j)
+	return false //bct[i].Since < bct[j].Since
+}
+
+func (bct ByBranches) Swap(i int, j int) {
+	bct.Items[i], bct.Items[j] = bct.Items[j], bct.Items[i]
+}
+
+type TangledPost interface {
+	Key() *MessageRef
+
+	Root() *MessageRef
+	Branches() []*MessageRef
+}
+
 // DropContentRequest has special meaning on a gabby-grove feed.
 // It's signature verification allows ommiting the content.
 // A feed author can ask other peers to drop a previous message of theirs with this.
