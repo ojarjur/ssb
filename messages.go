@@ -83,6 +83,9 @@ func (bct ByBranches) pointsTo(x, y string) bool {
 	return false
 }
 
+func (bct ByBranches) hopsToRoot(x, root string) {
+}
+
 func (bct ByBranches) Less(i int, j int) bool {
 
 	msgI, msgJ := bct.Items[i], bct.Items[j]

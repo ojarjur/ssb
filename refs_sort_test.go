@@ -8,17 +8,17 @@ import (
 
 func TestBranchCausalitySimple(t *testing.T) {
 	var msgs = []fakeMessage{
-		{key: "p1", text: "1fii", branches: nil},
-		{key: "p2", text: "2faa", branches: []string{"b1"}},
-		{key: "p3", text: "3foo", branches: []string{"b2"}},
+		{key: "p1", order: 1, branches: nil},
+		{key: "p2", order: 2, branches: []string{"b1"}},
+		{key: "p3", order: 3, branches: []string{"b2"}},
 
-		{key: "b1", text: "4fum", branches: []string{"p1"}},
-		{key: "b2", text: "5fum", branches: []string{"p2", "s1"}},
-		{key: "b3", text: "6fum", branches: []string{"p3", "s2"}},
+		{key: "b1", order: 4, branches: []string{"p1"}},
+		{key: "b2", order: 5, branches: []string{"p2", "s1"}},
+		{key: "b3", order: 6, branches: []string{"p3", "s2"}},
 
-		{key: "s1", text: "7fum", branches: []string{"p1"}},
-		{key: "s2", text: "8fum", branches: []string{"b2"}},
-		// {key: "s3", text: "9fum", branches: []string{"p3", "s2"}},
+		{key: "s1", order: 7, branches: []string{"p1"}},
+		{key: "s2", order: 8, branches: []string{"b2"}},
+		// {key: "s3", order: 9, branches: []string{"p3", "s2"}},
 	}
 	rand.Shuffle(len(msgs), func(i, j int) {
 		msgs[i], msgs[j] = msgs[j], msgs[i]
@@ -27,7 +27,6 @@ func TestBranchCausalitySimple(t *testing.T) {
 	// stupid interface wrapping
 	tp := make([]TangledPost, len(msgs))
 	for i, m := range msgs {
-		t.Log(i, string(m.Key().Hash))
 		tp[i] = TangledPost(m)
 	}
 
@@ -36,7 +35,9 @@ func TestBranchCausalitySimple(t *testing.T) {
 	sort.Sort(sorter)
 
 	for i, m := range tp {
-		t.Log(i, string(m.Key().Hash), m.(fakeMessage).text)
+		if m.(fakeMessage).order != i+1 {
+			t.Error(i, "not sorted")
+		}
 	}
 
 }
@@ -47,7 +48,7 @@ type fakeMessage struct {
 	root     string // same for all
 	branches []string
 
-	text string // like post.text
+	order int // test index
 }
 
 func (fm fakeMessage) Key() *MessageRef {
