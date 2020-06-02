@@ -44,14 +44,21 @@ type Message interface {
 type ByBranches struct {
 	Items []TangledPost
 
-	before map[string]string
+	before map[string][]string
 }
 
 func (byBr *ByBranches) FillLookup() {
-	bf := make(map[string]string, len(byBr.Items))
+	bf := make(map[string][]string, len(byBr.Items))
 
-	for i, m := range byBr.Items {
-		//bf[ m.Key().Ref()]
+	for _, m := range byBr.Items {
+		branches := m.Branches()
+
+		var refs = make([]string, len(branches))
+
+		for j, br := range branches {
+			refs[j] = br.Ref()
+		}
+		bf[m.Key().Ref()] = refs
 	}
 
 	byBr.before = bf
@@ -61,9 +68,31 @@ func (bct ByBranches) Len() int {
 	return len(bct.Items)
 }
 
+func (bct ByBranches) pointsTo(x, y string) bool {
+
+	pointsTo, has := bct.before[x]
+	if !has {
+		return false
+	}
+
+	for _, candidate := range pointsTo {
+		if bct.pointsTo(candidate, y) {
+			return true
+		}
+	}
+	return false
+}
+
 func (bct ByBranches) Less(i int, j int) bool {
-	fmt.Println("branches", i, j)
-	return false //bct[i].Since < bct[j].Since
+
+	msgI, msgJ := bct.Items[i], bct.Items[j]
+	smaller := false
+
+	if bct.pointsTo(msgJ.Key().Ref(), msgI.Key().Ref()) {
+		smaller = true
+	}
+	fmt.Println("branches", i, smaller, j)
+	return smaller //bct[i].Since < bct[j].Since
 }
 
 func (bct ByBranches) Swap(i int, j int) {
