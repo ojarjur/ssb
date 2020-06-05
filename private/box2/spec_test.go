@@ -1,13 +1,16 @@
 package box2
 
 import (
-	"bytes"
+	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/davecgh/go-spew/spew"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.cryptoscope.co/ssb"
 	"go.cryptoscope.co/ssb/keys"
@@ -15,7 +18,7 @@ import (
 
 func TestSpec(t *testing.T) {
 	dir, err := os.Open(filepath.Join("spec", "vectors"))
-	require.NoError(t, err, "open vectors dir")
+	require.NoError(t, err, "open vectors dir. get https://github.com/ssbc/private-group-spec and run 'ln -s ~/ssb/private-group-spec spec'")
 
 	ls, err := dir.Readdir(0)
 	require.NoError(t, err, "list vectors dir")
@@ -28,11 +31,11 @@ func TestSpec(t *testing.T) {
 		f, err := os.Open(filepath.Join("spec", "vectors", fi.Name()))
 		require.NoError(t, err, "open vector json file")
 
-		t.Log(f.Name())
-
 		var spec genericSpecTest
 		err = json.NewDecoder(f).Decode(&spec)
 		require.NoError(t, err, "json parse error")
+
+		t.Log(f.Name(), spec.Description)
 
 		f.Seek(0, 0)
 
@@ -120,29 +123,71 @@ type unboxSpecTest struct {
 }
 
 type unboxSpecTestInput struct {
-	Ciphertext []byte          `json:"ciphertext"`
-	FeedID     *ssb.FeedRef    `json:"feed_id"`
-	PrevMsgID  *ssb.MessageRef `json:"prev_msg_id"`
-	RecpKey    []byte          `json:"recipient_key"`
+	Messages  []ssb.KeyValueRaw   `json:"msgs"`
+	TrialKeys []unboxSpecTestKeys `json:"trial_keys"`
+}
+
+type unboxSpecTestKeys struct {
+	Key    b64str `json:"key"` // todo:base64
+	Scheme string `json:"string"`
+}
+
+type b64str keys.Key
+
+func (s *b64str) UnmarshalJSON(data []byte) error {
+	var strdata string
+	err := json.Unmarshal(data, &strdata)
+	if err != nil {
+		return err
+	}
+	decoded := make([]byte, len(strdata)) // will be shorter
+	n, err := base64.URLEncoding.Decode(decoded, []byte(strdata))
+	if err != nil {
+		spew.Dump(strdata)
+		return fmt.Errorf("invalid base64 key: %w", err)
+	}
+
+	*s = decoded[:n]
+	return nil
 }
 
 type unboxSpecTestOutput struct {
-	Plaintext []byte `json:"plain_text"`
+	MessageContents []struct {
+		Type       string   `json:"type"`
+		Text       string   `json:"text"`
+		Recipients []string `json:"recps"`
+	} `json:"msgsContent"`
 }
 
 func (ut unboxSpecTest) Test(t *testing.T) {
-	//spew.Dump(bt)
+	spew.Dump(ut)
+
 	bxr := NewBoxer(nil)
 
-	out, _ := bxr.Decrypt(
-		nil,
-		ut.Input.Ciphertext,
-		ut.Input.FeedID,
-		ut.Input.PrevMsgID,
-		keys.Keys{ut.Input.RecpKey},
-	)
+	for keyIdx, trialKey := range ut.Input.TrialKeys {
 
-	require.Equal(t, ut.Output.Plaintext, out)
+		for msgIdx, testMsg := range ut.Input.Messages {
+			t.Log(testMsg.Value.Author.ShortRef())
+
+			t.Log(testMsg.Value.Content)
+			ctext, err := base64.RawStdEncoding.DecodeString(strings.TrimSuffix(string(testMsg.Value.Content), ".box2"))
+			out, err := bxr.Decrypt(
+				nil,
+				ctext,
+				&testMsg.Value.Author, //testMsg.Value.Author,
+				testMsg.Value.Previous,
+				keys.Keys{keys.Key(trialKey.Key)},
+			)
+			if assert.NoError(t, err, "failed to decrypt: %d %d", keyIdx, msgIdx) {
+				continue
+			}
+			t.Log(string(out))
+			//require.Equal(t, ut.Output.Plaintext, out)
+
+		}
+
+	}
+
 }
 
 type deriveSecretSpecTest struct {
