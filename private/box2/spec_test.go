@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"bytes"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/stretchr/testify/assert"
@@ -128,7 +129,7 @@ type unboxSpecTestInput struct {
 }
 
 type unboxSpecTestKeys struct {
-	Key    b64str `json:"key"` // todo:base64
+	Key    b64str `json:"key"`
 	Scheme string `json:"string"`
 }
 
@@ -138,10 +139,10 @@ func (s *b64str) UnmarshalJSON(data []byte) error {
 	var strdata string
 	err := json.Unmarshal(data, &strdata)
 	if err != nil {
-		return err
+		return fmt.Errorf("b64str: json decode of string failed: %w",err)
 	}
 	decoded := make([]byte, len(strdata)) // will be shorter
-	n, err := base64.URLEncoding.Decode(decoded, []byte(strdata))
+	n, err := base64.StdEncoding.Decode(decoded, []byte(strdata))
 	if err != nil {
 		spew.Dump(strdata)
 		return fmt.Errorf("invalid base64 key: %w", err)
@@ -160,21 +161,26 @@ type unboxSpecTestOutput struct {
 }
 
 func (ut unboxSpecTest) Test(t *testing.T) {
-	spew.Dump(ut)
+//	spew.Dump(ut)
 
 	bxr := NewBoxer(nil)
 
 	for keyIdx, trialKey := range ut.Input.TrialKeys {
 
 		for msgIdx, testMsg := range ut.Input.Messages {
-			t.Log(testMsg.Value.Author.ShortRef())
+			t.Log(testMsg.Value.Author.Ref())
 
-			t.Log(testMsg.Value.Content)
-			ctext, err := base64.RawStdEncoding.DecodeString(strings.TrimSuffix(string(testMsg.Value.Content), ".box2"))
+			t.Log(string(testMsg.Value.Content))
+			var msgText string
+			err:=json.Unmarshal(testMsg.Value.Content, &msgText)
+			require.NoError(t, err, "json body failed")
+
+			ctext, err := base64.StdEncoding.DecodeString(strings.TrimSuffix(msgText, ".box2"))
+			require.NoError(t, err, "base64 failed")
 			out, err := bxr.Decrypt(
 				nil,
 				ctext,
-				&testMsg.Value.Author, //testMsg.Value.Author,
+				&testMsg.Value.Author,
 				testMsg.Value.Previous,
 				keys.Keys{keys.Key(trialKey.Key)},
 			)
@@ -185,7 +191,6 @@ func (ut unboxSpecTest) Test(t *testing.T) {
 			//require.Equal(t, ut.Output.Plaintext, out)
 
 		}
-
 	}
 
 }
